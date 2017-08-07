@@ -9,7 +9,12 @@
 #include "Random64.h"
 using namespace std;
 
+class Car{
 
+private:
+  int Vel,Pos;
+public:
+}; 
 
 int main(void){
 
