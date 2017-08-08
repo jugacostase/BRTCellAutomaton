@@ -9,6 +9,9 @@
 #include "Random64.h"
 using namespace std;
 
+Crandom ran(54);
+const int Vel_max=5;
+
 class Car{
 
 private:                                              // Class Car is introduced.
@@ -16,15 +19,25 @@ private:                                              // Class Car is introduced
 public:
   void create_car(int Pos0, int Vel0,int l0);         // initializes a car with initial Pos, Vel and l;
   void move_car(void);
+  void decide(int Pos_a, int Vel_a, int l_a);
   friend class Lane;                                  // to allow class Lane get Pos, Vel and Length
 };
 
 void Car::create_car(int Pos0, int Vel0,int l0){     
-  Pos=Pos0; Vel=Vel0; l=l0;
+  Pos=Pos0; Vel=Vel0; l=l0; 
 }
 
-void Car::move_car(void){                           // car moves Vel*t but t=1 so just Vel
+void Car::move_car(void){                              // car moves Vel*t but t=1 so just Vel
   Pos+=Vel;
+}
+
+void Car::decide(int Pos_a, int Vel_a, int l_a){       // deciding rules         
+  double p=0.3;                           // max vel and probability of reducing velocity
+  int dist_a=Pos_a-Pos-l_a;                            // distance to car ahead  taking into account cars length
+
+  if(Vel<Vel_max)Vel++;                                      // acceleration
+  if(dist_a<Vel)Vel=dist_a;                            // slowing down
+  if(Vel>1 and ran.r()<p)Vel--;                        // randomization
 }
 
 class Lane{                                         // I introduce the class Lane, which will place objects of the class Car on it.
@@ -38,6 +51,10 @@ public:
   void show_lane(void);
   void update_lane(void);
   void move_cars(void);
+  void interact(void);
+  void put_N_cars(int N,int seed);
+  double get_average_vel(void);
+  int get_number_of_cars(void);
 };
 
 void Lane::build_lane(int L0){                                  // Sets a lane of 0's of length L and number of cars=0;
@@ -48,7 +65,6 @@ void Lane::build_lane(int L0){                                  // Sets a lane o
 void Lane::place_car(Car Auto){                                 // Puts a car in the array of cars
   Cars.push_back(Auto);
   n_cars++;
- 
 }
 
 void Lane::show_lane(void){                                     // Prints rows of 0s with 1s where the cars are
@@ -56,36 +72,69 @@ void Lane::show_lane(void){                                     // Prints rows o
   cout<<endl;
 }
 
-void Lane::update_lane(void){                                    // Refresh cars position on the lane
-for(int i=0; i<L; i++){Street[i]=0;}
+void Lane::update_lane(void){                                    // This function freshes cars position on the lane
+for(int i=0; i<L; i++){Street[i]=0;}                             // Set all lane values to 0
   for(int i=0; i<n_cars; i++){
-    for(int j=Cars[i].Pos; j>(Cars[i].Pos-Cars[i].l);j--){
-      Street[j%L]=1;
+    for(int j=Cars[i].Pos; j>(Cars[i].Pos-Cars[i].l);j--){       // Place a 1s for every car according to its length
+      Street[j%L]=1;                                             // The j%L holds for periodic boundary conditions
     }
   }
 }
 
-void Lane::move_cars(void){                                   
+void Lane::move_cars(void){                                      // Makes every car on the cars arrange move according to its velocity
   for(int i=0; i<n_cars; i++){
     Cars[i].move_car();
   }
 }
 
-int main(void){
-
-  Lane Gold;
-  Car Volvo,MB;
-  
-  Gold.build_lane(10);
-  Volvo.create_car(10,1,2);
-  MB.create_car(15,1,2);
-  Gold.place_car(Volvo);
-  Gold.place_car(MB);
-  for(int t=0;t<15;t++){
-    Gold.update_lane();
-    Gold.show_lane();
-    Gold.move_cars();
+void Lane::interact(void){                                        
+  for(int i=0; i<n_cars-1; i++){
+    Cars[i].decide(Cars[i+1].Pos,Cars[i+1].Vel,Cars[i+1].l);     // Makes every car decide according to the car ahead
   }
+  Cars[n_cars-1].decide(Cars[0].Pos+L,Cars[0].Vel,Cars[0].l);    // Makes the last car interact with the first so it's periodic.
+}
 
+void Lane::put_N_cars(int N,int seed){                           // This is supposed to put N cars randomly with random velocities aswell...
+  Crandom rr(seed), rrr(seed+132);                               // ...but I haven't found an efficient way to do so.
+  int N_current=0;                                               // This definitely needs to be improved.
+  for(int i=1; i<L;i++){                                         // What I do is to go over the Lane and "throw a dice" on each cell to decide..
+    if(rr.r()<0.9){                                              //..whether to put a car or not, and then move to the next cell. That's...
+      Car R_Car;                                                 //..repeated until the desired number of cars is gotten. However,I run out of...
+      R_Car.create_car(i,(int)(Vel_max*rrr.r()),2);              //... lane's cell before I get the desired number everytime. I chose I higher...
+      place_car(R_Car);                                          // probability (90%) to fix it. Still don't like it though. Ther must be a better way
+      N_current++; i+=1;
+    }
+    if(N_current==N) break;
+  }
+}
+
+double Lane::get_average_vel(void){                             // This returns the average velocities over all the cars on the lane.
+  double sum=0;
+  for(int i=0; i<n_cars; i++){
+    sum+=Cars[i].Vel;
+  }
+  return sum/n_cars;
+}
+
+int Lane::get_number_of_cars(void){return n_cars;}             // Returns number of cars.
+
+int main(void){                   
+
+  for(double N=1;N<1000;N+=1){
+    
+    Lane Gold;
+    
+    Gold.build_lane(1000);
+    Gold.put_N_cars(N,9);
+    for(int t=0;t<1000;t++){
+      Gold.update_lane();
+      //Gold.show_lane();
+      Gold.interact();
+      Gold.move_cars();
+    }
+
+    cout<<(double)2*Gold.get_number_of_cars()/1000<<" "<<Gold.get_average_vel()*(double)2*Gold.get_number_of_cars()/1000<<endl; //fund. diagram.
+ 
+  }
   return 0;
 }
