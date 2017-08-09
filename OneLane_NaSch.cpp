@@ -56,6 +56,7 @@ public:
   void put_N_cars(int N,int seed);
   double get_average_vel(void);
   int get_number_of_cars(void);
+  void draw_lane(void);
 };
 
 void Lane::build_lane(int L0){                                  // Sets a lane of 0's of length L and number of cars=0;
@@ -74,11 +75,13 @@ void Lane::show_lane(void){                                     // Prints rows o
 }
 
 void Lane::update_lane(void){                                    // This function freshes cars position on the lane
-for(int i=0; i<L; i++){Street[i]=0;}                             // Set all lane values to 0
+  int color=3;
+  for(int i=0; i<L; i++){Street[i]=0;}                             // Set all lane values to 0
   for(int i=0; i<n_cars; i++){
     for(int j=Cars[i].Pos; j>(Cars[i].Pos-Cars[i].l);j--){       // Place a 1s for every car according to its length
-      Street[j%L]=1;                                             // The j%L holds for periodic boundary conditions
+      Street[j%L]=color;                                             // The j%L holds for periodic boundary conditions
     }
+    color++;
   }
 }
 
@@ -123,26 +126,35 @@ double Lane::get_average_vel(void){                             // This returns 
 
 int Lane::get_number_of_cars(void){return n_cars;}             // Returns number of cars.
 
+void Lane::draw_lane(void){
+  for(int i=0; i<L; i++){
+    cout<<i<<" "<<0<<" "<<Street[i]<<endl;
+    cout<<i<<" "<<1<<" "<<0<<endl;
+    cout<<i<<" "<<-1<<" "<<0<<endl;
+  }
+  cout<< "    "<<endl;
+  cout<< "    "<<endl;
+}
+
 int main(void){                   
 
-  int Lane_size=1000; int N_CARS=Lane_size/2;
-  for(double N=1;N<N_CARS;N+=10){
+  int Lane_size=20; int N_CARS=Lane_size/2;
+  //for(double N=1;N<N_CARS;N+=10){
     
     Lane Gold;
     
     Gold.build_lane(Lane_size);
-    Gold.put_N_cars(N,9);
-    for(int t=0;t<5000;t++){
+    Gold.put_N_cars(5,9);
+    for(int t=0;t<100;t++){
       Gold.update_lane();
       //Gold.show_lane();
       Gold.interact();
       Gold.move_cars();
+      Gold.draw_lane();
     }
     
-    cout<<(double)2*Gold.get_number_of_cars()/1000<<" "<<Gold.get_average_vel()<<endl;  //rho vs mean vel
+    //cout<<(double)2*Gold.get_number_of_cars()/1000<<" "<<Gold.get_average_vel()<<endl;  //rho vs mean vel
     //cout<<(double)2*Gold.get_number_of_cars()/1000<<" "<<Gold.get_average_vel()*(double)2*Gold.get_number_of_cars()/1000<<endl; //fund. diagram.
-    
- 
-  }
+    //}
   return 0;
 }
