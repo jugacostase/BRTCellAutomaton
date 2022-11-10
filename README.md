@@ -1,1 +1,1 @@
-This is my attempt during my undergrad physics studies to come up with a BRT celullar automaton to model transit in mu home city, Bogota- Colombia
+This is part of my undergrad physics thesis on a BRT celullar automaton to model transit in my home city, Bogota- Colombia
